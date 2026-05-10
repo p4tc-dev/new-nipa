@@ -12,6 +12,7 @@ import shutil
 import signal
 import time
 from .crash import has_crash, extract_crash
+import re
 
 
 """
@@ -55,6 +56,12 @@ def decode_and_filter(buf):
     buf = buf.decode("utf-8", "ignore")
     return "".join([x for x in buf if (x in ['\n'] or unicodedata.category(x)[0]!="C")])
 
+ANSI_ESCAPE_STR = re.compile(r'(?:\x1b)?\[\?2004[hl]|\x1b\[[0-9;?]*[a-zA-Z]')
+
+def clean_vm_output(raw_output):
+    cleaned = ANSI_ESCAPE_STR.sub('', raw_output)
+
+    return cleaned.strip()
 
 class VM:
     def __init__(self, config, vm_name=""):
@@ -445,6 +452,7 @@ class VM:
     def bash_prev_retcode(self):
         self.cmd("echo $?")
         stdout, stderr = self.drain_to_prompt()
+        stdout = clean_vm_output(stdout)
         return int(stdout.split('\n')[1])
 
 
